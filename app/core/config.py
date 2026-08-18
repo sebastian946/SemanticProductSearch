@@ -1,7 +1,8 @@
 import sys
 
-from pydantic import SecretStr, Field, ValidationError
+from pydantic import Field, SecretStr, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class AppSettings(BaseSettings):
     environment: str = Field(default="development")
@@ -29,7 +30,10 @@ class AppSettings(BaseSettings):
 try:
     settings = AppSettings()  # type: ignore[call-arg]
 except ValidationError as e:
-    print("Error loading settings. Missing or invalid environment variables:", file=sys.stderr)
+    print(
+        "Error loading settings. Missing or invalid environment variables:",
+        file=sys.stderr,
+    )
     for error in e.errors():
         loc = ".".join(str(part) for part in error.get("loc", ()))
         msg = error.get("msg", "")
