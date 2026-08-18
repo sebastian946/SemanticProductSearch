@@ -1,6 +1,6 @@
-import os
 import psycopg
 from psycopg.rows import dict_row
+
 from app.core.config import settings
 
 pgdb_name=settings.pgvector_db

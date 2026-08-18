@@ -1,12 +1,14 @@
 from fastapi import FastAPI, HTTPException
-from app.core.config import settings
-from app.core.db import connection
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.config import settings
+from app.core.db import connection
 
-app = FastAPI(title="Semantic Product Search API",
-              version="1.0.0",
-              description="API for semantic product search using embeddings and vector databases.")
+app = FastAPI(
+    title="Semantic Product Search API",
+    version="1.0.0",
+    description="API for semantic product search using embeddings and pgvector.",
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,5 +25,8 @@ def health_check():
         cur.execute("SELECT 1")
         cur.connection.close()
     except Exception:
-        raise HTTPException(status_code=503, detail={"status": "error", "message": "Database connection failed."})
+        raise HTTPException(
+            status_code=503,
+            detail={"status": "error", "message": "Database connection failed."},
+        )
     return {"status": "ok", "message": "Semantic Product Search API is running."}
