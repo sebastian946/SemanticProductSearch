@@ -14,6 +14,14 @@ class AppSettings(BaseSettings):
     embedding_model: str = Field(default="all-MiniLM-L6-v2")
     model_name: str = Field(default="sentence-transformers/all-MiniLM-L6-v2")
     top_k: int = Field(default=5)
+    postgres_user: str = Field(default="root")
+    postgres_password: str = Field(default="root")
+    postgres_db: str = Field(default="semantic")
+    pgvector_user: str = Field(default="root")
+    pgvector_password: str = Field(default="root")
+    pgvector_db: str = Field(default="semantic_db")
+    host: str = Field(default="localhost")
+    port: int = Field(default=5432)
 
     model_config = SettingsConfigDict(env_file=".env")
 
