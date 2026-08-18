@@ -22,6 +22,7 @@ class AppSettings(BaseSettings):
     pgvector_db: str = Field(default="semantic_db")
     host: str = Field(default="localhost")
     port: int = Field(default=5432)
+    frontend_url: str = Field(default="http://localhost:3000")
 
     model_config = SettingsConfigDict(env_file=".env")
 

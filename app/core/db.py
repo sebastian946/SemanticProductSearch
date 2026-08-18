@@ -1,7 +1,7 @@
 import os
 import psycopg
 from psycopg.rows import dict_row
-from config import settings
+from app.core.config import settings
 
 pgdb_name=settings.pgvector_db
 pgdb_user=settings.pgvector_user
