@@ -5,24 +5,29 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.19.1",
     "fastapi>=0.141.1",
     "langchain>=1.3.15",
     "langchain-anthropic>=1.5.6",
     "langchain-community>=0.4.2",
+    "langchain-postgres>=0.0.12",
+    "langchain-voyageai>=0.4.1",
     "langsmith>=0.11.0",
     "numpy>=2.5.2",
     "ollama>=0.6.2",
-    "pgvector>=0.5.0",
+    "pgvector>=0.2.5,<0.4",
     "psycopg[binary]>=3.3.4",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.15.0",
     "ruff>=0.16.3",
+    "sqlalchemy>=2.0.52",
     "uvicorn>=0.52.3",
 ]
 
 [tool.ruff]
 target-version = "py312"
 line-length = 88
+extend-exclude = ["alembic/versions"]
 
 [tool.ruff.lint]
 select = ["E","F","I","UP"]
