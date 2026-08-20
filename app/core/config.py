@@ -24,6 +24,7 @@ class AppSettings(BaseSettings):
     host: str = Field(default="localhost")
     port: int = Field(default=5432)
     frontend_url: str = Field(default="http://localhost:3000")
+    voyage_api_key: SecretStr
 
     model_config = SettingsConfigDict(env_file=".env")
 
