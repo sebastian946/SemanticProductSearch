@@ -4,7 +4,7 @@ from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
-EMBEDDING_DIM = 1024
+EMBEDDING_DIM = 384  # ver app/search/embeddings.py
 
 
 class Products(Base):
