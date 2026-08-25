@@ -1,4 +1,5 @@
 import psycopg
+from pgvector.psycopg import register_vector
 from psycopg.rows import dict_row
 
 from app.core.config import settings
@@ -15,6 +16,8 @@ def connection():
         port=port,
         dbname=pgdb_name,
         user=pgdb_user,
-        password=pgdb_password  )
+        password=pgdb_password,
+    )
+    register_vector(conn)
 
     return conn.cursor(row_factory=dict_row)
