@@ -1,6 +1,16 @@
 from pgvector.sqlalchemy import Vector
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import ARRAY, Column, Float, Index, Integer, String
+from sqlalchemy import (
+    ARRAY,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    func,
+)
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -25,6 +35,18 @@ class Products(Base):
     thumbnail = Column(String, index=False)
     embedding = Column(Vector(EMBEDDING_DIM))
 
+class Reviews(Base):
+    __tablename__ = "reviews"
+
+    id = Column(Integer, primary_key=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False, index=True)
+    rating = Column(Integer, nullable=False)
+    comment = Column(String)
+    language = Column(String)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    embedding = Column(Vector(EMBEDDING_DIM))
+
+
 class ProductResult(BaseModel):
     id: int
     title: str
@@ -40,6 +62,14 @@ class ProductResult(BaseModel):
 Index(
     "ix_products_embedding_hnsw",
     Products.embedding,
+    postgresql_using="hnsw",
+    postgresql_with={"m": 16, "ef_construction": 64},
+    postgresql_ops={"embedding": "vector_cosine_ops"},
+)
+
+Index(
+    "ix_reviews_embedding_hnsw",
+    Reviews.embedding,
     postgresql_using="hnsw",
     postgresql_with={"m": 16, "ef_construction": 64},
     postgresql_ops={"embedding": "vector_cosine_ops"},
