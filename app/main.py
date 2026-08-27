@@ -12,7 +12,9 @@ from app.core.db import connection
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Get all the products from the API and store them in memory")
-    await get_products()
+    result = await get_products()
+    if isinstance(result, dict) and "error" in result:
+        print(f"WARNING: no se pudo cargar el catálogo al iniciar: {result}")
     yield
 
 
@@ -38,13 +40,14 @@ app.include_router(routes.router)
 
 @app.get("/health")
 def health_check():
+    cur = connection()
     try:
-        cur = connection()
         cur.execute("SELECT 1")
-        cur.connection.close()
     except Exception:
         raise HTTPException(
             status_code=503,
             detail={"status": "error", "message": "Database connection failed."},
         )
+    finally:
+        cur.connection.close()
     return {"status": "ok", "message": "Semantic Product Search API is running."}

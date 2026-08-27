@@ -41,37 +41,40 @@ def ingest(products: list[dict] | None = None) -> int:
     cur = connection()
     total = 0
 
-    for start in range(0, len(products), BATCH_SIZE):
-        batch_products = products[start : start + BATCH_SIZE]
-        batch_documents = documents[start : start + BATCH_SIZE]
-        texts = [doc["page_content"] for doc in batch_documents]
-        vectors = embed(texts)
+    try:
+        for start in range(0, len(products), BATCH_SIZE):
+            batch_products = products[start : start + BATCH_SIZE]
+            batch_documents = documents[start : start + BATCH_SIZE]
+            texts = [doc["page_content"] for doc in batch_documents]
+            vectors = embed(texts)
 
-        for product, doc, vector in zip(batch_products, batch_documents, vectors):
-            metadata = doc["metadata"]
-            images = product.get("images") or []
-            cur.execute(
-                UPSERT_QUERY,
-                (
-                    product["id"],
-                    product["title"],
-                    product["description"],
-                    images[0] if images else None,
-                    f"https://dummyjson.com/products/{product['id']}",
-                    metadata["price"],
-                    metadata["category"],
-                    metadata["rating"],
-                    metadata["stock"],
-                    metadata["tags"],
-                    metadata["brand"],
-                    metadata["thumbnail"],
-                    vector,
-                ),
-            )
+            for product, doc, vector in zip(batch_products, batch_documents, vectors):
+                metadata = doc["metadata"]
+                images = product.get("images") or []
+                cur.execute(
+                    UPSERT_QUERY,
+                    (
+                        product["id"],
+                        product["title"],
+                        product["description"],
+                        images[0] if images else None,
+                        f"https://dummyjson.com/products/{product['id']}",
+                        metadata["price"],
+                        metadata["category"],
+                        metadata["rating"],
+                        metadata["stock"],
+                        metadata["tags"],
+                        metadata["brand"],
+                        metadata["thumbnail"],
+                        vector,
+                    ),
+                )
 
-        cur.connection.commit()
-        total += len(batch_products)
-        print(f"Lote procesado: {total}/{len(products)}")
+            cur.connection.commit()
+            total += len(batch_products)
+            print(f"Lote procesado: {total}/{len(products)}")
+    finally:
+        cur.connection.close()
 
     return total
 
@@ -80,9 +83,12 @@ if __name__ == "__main__":
     inserted = ingest()
 
     cur = connection()
-    cur.execute("SELECT count(*) AS total FROM products")
-    row = cur.fetchone()
-    total_en_db = row["total"] if row else 0
+    try:
+        cur.execute("SELECT count(*) AS total FROM products")
+        row = cur.fetchone()
+        total_en_db = row["total"] if row else 0
+    finally:
+        cur.connection.close()
 
     print(f"Productos procesados en esta corrida: {inserted}")
     print(f"Total actual en products: {total_en_db}")

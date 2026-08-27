@@ -6,7 +6,7 @@ def build_metadata(product: dict) -> dict:
         "stock": int(product["stock"]),
         "tags": list(product["tags"]),
         "brand": str(product.get("brand") or ""),
-        "thumbnail": str(product["thumbnail"]),
+        "thumbnail": str(product["thumbnail"]) if product.get("thumbnail") else None,
     }
 
 

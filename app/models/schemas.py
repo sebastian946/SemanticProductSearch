@@ -1,4 +1,5 @@
 from pgvector.sqlalchemy import Vector
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import ARRAY, Column, Float, Index, Integer, String
 from sqlalchemy.orm import declarative_base
 
@@ -23,6 +24,17 @@ class Products(Base):
     brand = Column(String, index=True)
     thumbnail = Column(String, index=False)
     embedding = Column(Vector(EMBEDDING_DIM))
+
+class ProductResult(BaseModel):
+    id: int
+    title: str
+    description: str
+    price: float
+    image_url: str | None
+    product_url: str
+    score: float
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 Index(

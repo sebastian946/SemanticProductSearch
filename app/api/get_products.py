@@ -1,3 +1,4 @@
+import asyncio
 import json
 from pathlib import Path
 
@@ -11,7 +12,9 @@ RAW_DATA_PATH = Path(__file__).resolve().parents[2] / "data" / "dummyjson_produc
 
 
 async def get_products():
-    response = requests.get(DUMMYJSON_URL, params={"limit": 0})
+    response = await asyncio.to_thread(
+        requests.get, DUMMYJSON_URL, params={"limit": 0}
+    )
     if response.status_code != 200:
         return {
             "error": "Failed to fetch products",
