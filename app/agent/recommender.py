@@ -20,11 +20,28 @@ Decisiones documentadas:
 """
 
 import asyncio
+import os
 
 from langchain.agents import create_agent
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from app.core.config import settings
+
+# PROD-35: LangSmith lee estas variables del entorno del proceso; pydantic
+# solo las carga a `settings`, así que hay que exportarlas explícitamente.
+# Las keys viven en .env, nunca acá.
+if settings.langsmith_tracing:
+    os.environ.setdefault("LANGSMITH_TRACING", "true")
+    os.environ.setdefault(
+        "LANGSMITH_API_KEY", settings.langsmith_api_key.get_secret_value()
+    )
+    os.environ.setdefault("LANGSMITH_PROJECT", settings.langsmith_project)
+    os.environ.setdefault("LANGSMITH_ENDPOINT", settings.langsmith_endpoint)
+
+# Precio estimado por millón de tokens (config aproximada para Anthropic;
+# con Ollama local el costo real es 0 y se reporta 0).
+PRICE_PER_MTOK_INPUT = 3.0
+PRICE_PER_MTOK_OUTPUT = 15.0
 
 PROJECT_DIR = "c:/repositories/SemanticProductSearch"
 
@@ -70,12 +87,18 @@ def _build_llm():
 
 
 async def recommend(user_query: str) -> dict:
+    from langchain_core.tracers.context import collect_runs
+
     client = MultiServerMCPClient(MCP_SERVERS)
     tools = await client.get_tools()
 
     agent = create_agent(_build_llm(), tools, system_prompt=SYSTEM_PROMPT)
-    result = await agent.ainvoke(
-        {"messages": [{"role": "user", "content": user_query}]}
+    with collect_runs() as run_collector:
+        result = await agent.ainvoke(
+            {"messages": [{"role": "user", "content": user_query}]}
+        )
+    run_id = (
+        str(run_collector.traced_runs[0].id) if run_collector.traced_runs else None
     )
 
     messages = result["messages"]
@@ -84,7 +107,36 @@ async def recommend(user_query: str) -> dict:
         for message in messages
         for call in getattr(message, "tool_calls", None) or []
     ]
-    return {"answer": messages[-1].content, "tool_calls": tool_calls}
+
+    input_tokens = 0
+    output_tokens = 0
+    for message in messages:
+        usage = getattr(message, "usage_metadata", None) or {}
+        input_tokens += usage.get("input_tokens", 0)
+        output_tokens += usage.get("output_tokens", 0)
+
+    using_local_llm = settings.anthropic_api_key.get_secret_value().startswith("<")
+    cost_usd = (
+        0.0
+        if using_local_llm
+        else (
+            input_tokens * PRICE_PER_MTOK_INPUT
+            + output_tokens * PRICE_PER_MTOK_OUTPUT
+        )
+        / 1_000_000
+    )
+
+    return {
+        "answer": messages[-1].content,
+        "tool_calls": tool_calls,
+        "run_id": run_id,
+        "tokens_used": {
+            "input": input_tokens,
+            "output": output_tokens,
+            "total": input_tokens + output_tokens,
+        },
+        "estimated_cost_usd": round(cost_usd, 6),
+    }
 
 
 async def stream_recommendation(user_query: str):

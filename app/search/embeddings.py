@@ -18,12 +18,19 @@ Dimensión de salida: 384 — debe coincidir con EMBEDDING_DIM en
 app/models/schemas.py y con la columna `vector(N)` de la tabla `products`.
 """
 
+from cachetools import LRUCache
 from sentence_transformers import SentenceTransformer
 
 MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 EMBEDDING_DIM = 384
 
 _model: SentenceTransformer | None = None
+
+# Caché en memoria (no Redis) a propósito: la app corre en un solo proceso
+# y el mismo texto siempre produce el mismo vector, así que un LRU local
+# alcanza y evita infra extra. Si esto escalara a varios procesos/replicas,
+# el mismo mapeo texto->vector se movería a Redis sin cambiar la interfaz.
+_embedding_cache: LRUCache = LRUCache(maxsize=2048)
 
 
 def _get_model() -> SentenceTransformer:
@@ -34,6 +41,10 @@ def _get_model() -> SentenceTransformer:
 
 
 def embed(texts: list[str]) -> list[list[float]]:
-    model = _get_model()
-    vectors = model.encode(texts, normalize_embeddings=True)
-    return vectors.tolist()
+    missing = [text for text in texts if text not in _embedding_cache]
+    if missing:
+        model = _get_model()
+        vectors = model.encode(missing, normalize_embeddings=True).tolist()
+        for text, vector in zip(missing, vectors):
+            _embedding_cache[text] = vector
+    return [_embedding_cache[text] for text in texts]

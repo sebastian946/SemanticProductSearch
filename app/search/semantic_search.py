@@ -1,3 +1,5 @@
+from cachetools import TTLCache
+
 from app.core.db import connection
 from app.models.schemas import ProductResult
 from app.search.embeddings import embed
@@ -88,3 +90,21 @@ def to_product_result(row: dict) -> ProductResult:
 def search_formatted(query: str, top_k: int = 5, **filters) -> list[ProductResult]:
     rows = search(query, top_k=top_k, **filters)
     return [to_product_result(row) for row in rows]
+
+
+# TTL corto: el catálogo cambia poco, pero un re-ingest debe reflejarse
+# en minutos sin reiniciar la app. En memoria y no Redis por la misma
+# razón documentada en embeddings.py (un solo proceso).
+_search_cache: TTLCache = TTLCache(maxsize=512, ttl=300)
+
+
+def search_formatted_cached(
+    query: str, top_k: int = 5, **filters
+) -> tuple[list[ProductResult], bool]:
+    """Como search_formatted, pero con caché. Devuelve (resultados, cache_hit)."""
+    key = (query, top_k, tuple(sorted(filters.items())))
+    if key in _search_cache:
+        return _search_cache[key], True
+    results = search_formatted(query, top_k=top_k, **filters)
+    _search_cache[key] = results
+    return results, False
