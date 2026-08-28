@@ -1,12 +1,12 @@
 import json
 
-from mcp.server.mcpserver import MCPServer
-from mcp.server.mcpserver.tools.base import ToolError
+from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.exceptions import ToolError
 
 from app.reviews import logic as reviews_logic
 from app.search.semantic_search import search_formatted
 
-mcp = MCPServer("semantic-product-search")
+mcp = FastMCP("semantic-product-search")
 
 
 @mcp.tool()
