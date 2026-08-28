@@ -30,6 +30,16 @@ dependencies = [
     "uvicorn>=0.52.3",
 ]
 
+# torch desde el índice CPU: en Docker/Linux el default de PyPI arrastra
+# CUDA (~5GB) que no se usa; en Windows dev ya era CPU, así que es consistente.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
 [tool.ruff]
 target-version = "py312"
 line-length = 88

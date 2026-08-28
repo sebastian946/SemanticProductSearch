@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from app.api import routes, search
 from app.api.get_products import get_products
@@ -51,6 +51,11 @@ async def unhandled_error_handler(request, exc: Exception):
     return JSONResponse(
         status_code=500, content={"error": "error interno del servidor"}
     )
+
+@app.get("/", include_in_schema=False)
+def index():
+    return FileResponse("frontend/index.html")
+
 
 @app.get("/health")
 def health_check():

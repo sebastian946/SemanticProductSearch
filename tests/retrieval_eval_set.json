@@ -1,0 +1,62 @@
+[
+  {
+    "query": "algo para mantener el cafe caliente",
+    "expected_ids": [34, 67],
+    "note": "query vaga en espanol, catalogo en ingles"
+  },
+  {
+    "query": "mascara de pestanas para mas volumen",
+    "expected_ids": [1],
+    "note": "cross-idioma beauty"
+  },
+  {
+    "query": "laptop de Apple para trabajar",
+    "expected_ids": [78],
+    "note": "marca + categoria"
+  },
+  {
+    "query": "red and black basketball sneakers",
+    "expected_ids": [88],
+    "note": "query en ingles"
+  },
+  {
+    "query": "comida para mi perro",
+    "expected_ids": [22],
+    "note": "cross-idioma groceries"
+  },
+  {
+    "query": "un reloj de lujo suizo",
+    "expected_ids": [98, 190, 192],
+    "note": "concepto (lujo) sin palabra exacta; IWC y Rolex Datejust tambien son validos"
+  },
+  {
+    "query": "asistente de voz inteligente para la casa",
+    "expected_ids": [99],
+    "note": "descripcion funcional, no nombre"
+  },
+  {
+    "query": "esmalte rojo para las unas",
+    "expected_ids": [5],
+    "note": "cross-idioma beauty"
+  },
+  {
+    "query": "telefono apple de gama alta",
+    "expected_ids": [123, 124],
+    "note": "varios validos"
+  },
+  {
+    "query": "casco para jugar cricket",
+    "expected_ids": [144],
+    "note": "deporte especifico"
+  },
+  {
+    "query": "arroz para cocinar",
+    "expected_ids": [38],
+    "note": "grocery simple"
+  },
+  {
+    "query": "cargador para mi iphone",
+    "expected_ids": [104],
+    "note": "accesorio especifico"
+  }
+]

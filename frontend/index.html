@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Semantic Product Search</title>
+  <style>
+    :root { --bg: #0f1115; --card: #1a1d24; --text: #e8eaed; --muted: #9aa0a6; --accent: #7aa2f7; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 2rem 1rem; }
+    h1 { font-size: 1.4rem; }
+    form { display: flex; gap: .5rem; margin: 1rem 0; }
+    input[type=text] { flex: 1; padding: .7rem 1rem; border-radius: 8px; border: 1px solid #333; background: var(--card); color: var(--text); font-size: 1rem; }
+    button { padding: .7rem 1.2rem; border-radius: 8px; border: 0; background: var(--accent); color: #10131a; font-weight: 600; cursor: pointer; }
+    button:disabled { opacity: .5; }
+    #status { color: var(--muted); min-height: 1.4em; margin: .5rem 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 1rem; }
+    .card { background: var(--card); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+    .card img { width: 100%; aspect-ratio: 1; object-fit: contain; background: #fff; }
+    .card .body { padding: .8rem; display: flex; flex-direction: column; gap: .3rem; flex: 1; }
+    .card .title { font-weight: 600; font-size: .95rem; }
+    .card .price { color: var(--accent); font-weight: 700; }
+    .card .score { color: var(--muted); font-size: .8rem; }
+    .card a { margin-top: auto; color: var(--accent); font-size: .85rem; }
+    #reco { border: 1px solid var(--accent); background: #16213a; border-radius: 12px; padding: 1rem; margin: 1.5rem 0; white-space: pre-wrap; display: none; }
+    #reco h2 { margin: 0 0 .5rem; font-size: 1rem; color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🔎 Semantic Product Search</h1>
+    <form id="form">
+      <input id="query" type="text" placeholder='Probá: "algo para mantener el café caliente"' required />
+      <button id="btn" type="submit">Buscar</button>
+    </form>
+    <div id="status"></div>
+    <div id="reco"><h2>💡 Recomendación</h2><span id="reco-text"></span></div>
+    <div id="results" class="grid"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("form");
+    const statusEl = document.getElementById("status");
+    const resultsEl = document.getElementById("results");
+    const recoEl = document.getElementById("reco");
+    const recoText = document.getElementById("reco-text");
+    const btn = document.getElementById("btn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      resultsEl.innerHTML = "";
+      recoEl.style.display = "none";
+      recoText.textContent = "";
+      statusEl.textContent = "conectando...";
+
+      // EventSource no soporta POST, así que el SSE se lee con fetch + reader.
+      const response = await fetch("/search/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: document.getElementById("query").value, top_k: 6 }),
+      });
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let sep;
+        while ((sep = buffer.indexOf("\n\n")) !== -1) {
+          const chunk = buffer.slice(0, sep);
+          buffer = buffer.slice(sep + 2);
+          const eventMatch = chunk.match(/^event: (.+)$/m);
+          const dataMatch = chunk.match(/^data: (.+)$/m);
+          if (!eventMatch || !dataMatch) continue;
+          handleEvent(eventMatch[1], JSON.parse(dataMatch[1]));
+        }
+      }
+      btn.disabled = false;
+    });
+
+    function handleEvent(event, data) {
+      if (event === "status") statusEl.textContent = "⏳ " + data;
+      if (event === "results") {
+        statusEl.textContent = data.length ? "" : "sin resultados para esa búsqueda";
+        for (const p of data) {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <img src="${p.image_url ?? ""}" alt="" loading="lazy" />
+            <div class="body">
+              <span class="title">${p.title}</span>
+              <span class="price">$${p.price}</span>
+              <span class="score">similitud: ${(p.score * 100).toFixed(1)}%</span>
+              <a href="${p.product_url}" target="_blank" rel="noopener">ver producto →</a>
+            </div>`;
+          resultsEl.appendChild(card);
+        }
+      }
+      if (event === "token") {
+        recoEl.style.display = "block";
+        statusEl.textContent = "";
+        recoText.textContent += data;
+      }
+      if (event === "error") statusEl.textContent = "⚠️ " + data;
+      if (event === "done" && !recoText.textContent) statusEl.textContent ||= "listo";
+    }
+  </script>
+</body>
+</html>
