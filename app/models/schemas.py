@@ -80,15 +80,31 @@ class SearchRequest(BaseModel):
         return value.strip()
 
 
+class TokensUsed(BaseModel):
+    input: int = 0
+    output: int = 0
+    total: int = 0
+
+
 class Recommendation(BaseModel):
     answer: str
     tool_calls: list[str] = []
+    run_id: str | None = None
+    tokens_used: TokensUsed = TokensUsed()
+    estimated_cost_usd: float = 0.0
+
+
+class FeedbackRequest(BaseModel):
+    run_id: str = Field(min_length=1)
+    score: int = Field(ge=0, le=1, description="0 = pulgar abajo, 1 = pulgar arriba")
+    comment: str | None = None
 
 
 class SearchResponse(BaseModel):
     results: list[ProductResult]
     recommendation: Recommendation | None = None
     recommendation_error: str | None = None
+    cache_hit: bool = False
 
 
 Index(
