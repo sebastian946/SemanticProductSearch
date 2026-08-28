@@ -1,5 +1,5 @@
 from pgvector.sqlalchemy import Vector
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import (
     ARRAY,
     Column,
@@ -57,6 +57,38 @@ class ProductResult(BaseModel):
     score: float
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SearchFilters(BaseModel):
+    category: str | None = None
+    brand: str | None = None
+    min_price: float | None = Field(default=None, ge=0)
+    max_price: float | None = Field(default=None, ge=0)
+
+
+class SearchRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=500)
+    top_k: int = Field(default=5, ge=1, le=20)
+    filters: SearchFilters | None = None
+    include_recommendation: bool = True
+
+    @field_validator("query")
+    @classmethod
+    def query_not_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("query no puede estar vacío")
+        return value.strip()
+
+
+class Recommendation(BaseModel):
+    answer: str
+    tool_calls: list[str] = []
+
+
+class SearchResponse(BaseModel):
+    results: list[ProductResult]
+    recommendation: Recommendation | None = None
+    recommendation_error: str | None = None
 
 
 Index(
