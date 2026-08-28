@@ -87,6 +87,23 @@ async def recommend(user_query: str) -> dict:
     return {"answer": messages[-1].content, "tool_calls": tool_calls}
 
 
+async def stream_recommendation(user_query: str):
+    """Genera la recomendación token a token (para SSE)."""
+    client = MultiServerMCPClient(MCP_SERVERS)
+    tools = await client.get_tools()
+
+    agent = create_agent(_build_llm(), tools, system_prompt=SYSTEM_PROMPT)
+    async for chunk, _metadata in agent.astream(
+        {"messages": [{"role": "user", "content": user_query}]},
+        stream_mode="messages",
+    ):
+        content = getattr(chunk, "content", "")
+        if isinstance(content, str) and content and not getattr(
+            chunk, "tool_call_id", None
+        ):
+            yield content
+
+
 if __name__ == "__main__":
     import sys
 

@@ -2,8 +2,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from app.api import routes
+from app.api import routes, search
 from app.api.get_products import get_products
 from app.core.config import settings
 from app.core.db import connection
@@ -37,6 +38,19 @@ app.add_middleware(
 )
 
 app.include_router(routes.router)
+app.include_router(search.router)
+
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request, exc: ValueError):
+    return JSONResponse(status_code=400, content={"error": str(exc)})
+
+
+@app.exception_handler(Exception)
+async def unhandled_error_handler(request, exc: Exception):
+    return JSONResponse(
+        status_code=500, content={"error": "error interno del servidor"}
+    )
 
 @app.get("/health")
 def health_check():
